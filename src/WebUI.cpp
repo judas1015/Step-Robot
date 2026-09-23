@@ -47,8 +47,10 @@ const char* INDEX_HTML = R"rawliteral(
         .btn-stop { background-color: var(--danger); color: white; }
         .btn-group { display: flex; justify-content: space-between; margin-top: 10px; }
         .status { text-align: center; margin-top: -10px; margin-bottom: 15px; font-size: 0.9rem; color: #888; }
-        .joy-container { position: relative; width: 150px; height: 150px; background: #333; border-radius: 50%; margin: 20px auto; border: 2px solid var(--accent); touch-action: none; }
-        .joy-knob { position: absolute; width: 50px; height: 50px; background: var(--accent); border-radius: 50%; top: 50px; left: 50px; pointer-events: none; }
+        .dpad { display: flex; flex-direction: column; align-items: center; margin: 20px auto; gap: 25px; }
+        .dpad-row { display: flex; gap: 70px; }
+        .dpad-btn { width: 60px; height: 60px; background: #333; border: 2px solid var(--accent); color: var(--accent); font-size: 24px; border-radius: 10px; cursor: pointer; user-select: none; touch-action: none; margin: 0; }
+        .dpad-btn:active { background: var(--accent); color: #000; }
     </style>
 </head>
 <body>
@@ -102,11 +104,16 @@ const char* INDEX_HTML = R"rawliteral(
         </div>
 
         <div class="panel" style="text-align: center;">
-            <h3 style="margin-top: 0;">Joystick</h3>
-            <div class="joy-container" id="joy-zone">
-                <div class="joy-knob" id="joy-knob"></div>
+            <h3 style="margin-top: 0;">Điều Khiển (D-Pad)</h3>
+            <div class="dpad">
+                <button id="btn-up" class="dpad-btn">▲</button>
+                <div class="dpad-row">
+                    <button id="btn-left" class="dpad-btn">◀</button>
+                    <button id="btn-right" class="dpad-btn">▶</button>
+                </div>
+                <button id="btn-down" class="dpad-btn">▼</button>
             </div>
-            <div class="status">Kéo để lái xe (Lên/Xuống: Chạy - Trái/Phải: Rẽ)</div>
+            <div class="status">Nhấn giữ để lái (Lên/Xuống: Chạy - Trái/Phải: Rẽ)</div>
         </div>
     </div>
 
@@ -209,55 +216,30 @@ const char* INDEX_HTML = R"rawliteral(
             }
         };
 
-        // Joystick logic
-        const joyZone = document.getElementById('joy-zone');
-        const joyKnob = document.getElementById('joy-knob');
-        let joyActive = false;
-        let joyRect = joyZone.getBoundingClientRect();
-        let joyCenterX = joyRect.width / 2;
-        let joyCenterY = joyRect.height / 2;
-        let maxRadius = joyCenterX - 25; // half knob size
-        
-        window.addEventListener('resize', () => { joyRect = joyZone.getBoundingClientRect(); });
-        
-        function updateJoystick(e) {
-            if (!joyActive) return;
-            e.preventDefault();
-            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            let dx = clientX - joyRect.left - joyCenterX;
-            let dy = clientY - joyRect.top - joyCenterY;
-            let distance = Math.sqrt(dx*dx + dy*dy);
-            if (distance > maxRadius) {
-                dx = dx * (maxRadius / distance);
-                dy = dy * (maxRadius / distance);
-            }
-            joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
-            
-            // Normalize -1.0 to 1.0 (inverted Y so UP is positive)
-            let nx = dx / maxRadius;
-            let ny = -dy / maxRadius;
-            
+        // D-Pad logic
+        function sendJoy(x, y) {
             if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({type: 'joy', x: nx, y: ny}));
+                ws.send(JSON.stringify({type: 'joy', x: x, y: y}));
             }
         }
         
-        function resetJoystick() {
-            joyActive = false;
-            joyKnob.style.transform = `translate(0px, 0px)`;
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({type: 'joy', x: 0, y: 0}));
-            }
+        function bindDPad(id, x, y) {
+            const btn = document.getElementById(id);
+            const press = (e) => { e.preventDefault(); sendJoy(x, y); };
+            const release = (e) => { e.preventDefault(); sendJoy(0, 0); };
+            
+            btn.addEventListener('mousedown', press);
+            btn.addEventListener('touchstart', press, {passive: false});
+            
+            btn.addEventListener('mouseup', release);
+            btn.addEventListener('mouseleave', release);
+            btn.addEventListener('touchend', release);
         }
         
-        joyZone.addEventListener('mousedown', (e) => { joyActive = true; updateJoystick(e); });
-        window.addEventListener('mousemove', updateJoystick);
-        window.addEventListener('mouseup', resetJoystick);
-        
-        joyZone.addEventListener('touchstart', (e) => { joyActive = true; updateJoystick(e); }, {passive: false});
-        window.addEventListener('touchmove', updateJoystick, {passive: false});
-        window.addEventListener('touchend', resetJoystick);
+        bindDPad('btn-up', 0, 0.4);
+        bindDPad('btn-down', 0, -0.4);
+        bindDPad('btn-left', -0.4, 0);
+        bindDPad('btn-right', 0.4, 0);
     </script>
 </body>
 </html>

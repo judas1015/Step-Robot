@@ -38,6 +38,8 @@ static float g_speed_kp = Config::SPEED_KP;
 static float g_speed_ki = Config::SPEED_KI;
 static float g_joy_x = 0.0f;
 static float g_joy_y = 0.0f;
+static float g_filtered_speed = 0.0f;
+static float g_distance = 0.0f;
 static bool g_stopped = false; // true = user-requested emergency stop
 static bool g_verbose = true;
 static uint32_t g_debugTimer = 0;
@@ -231,31 +233,29 @@ void loop() {
   }
 
   // ── 5. Cascaded Speed/Position Loop ────────────────────────────────────
-  static float filtered_speed = 0;
-  static float distance = 0;
   static float last_output = 0;
 
   // We use the previous motor output to estimate current speed
   float actual_speed = -last_output; // positive = moving forward
 
-  // Remove low-pass filter to eliminate phase lag (which causes oscillation)
-  filtered_speed = actual_speed;
+  // Low-pass filter to smooth speed estimation (critical to prevent vibration)
+  g_filtered_speed = (0.9f * g_filtered_speed) + (0.1f * actual_speed);
 
   float target_speed = g_joy_y * Config::JOY_MAX_SPEED;
 
   // Integrate speed error to get position (distance error)
   if (g_stopped)
-    distance = 0; // reset if stopped or fallen
+    g_distance = 0; // reset if stopped or fallen
   else
-    distance += (filtered_speed - target_speed) * dt;
+    g_distance += (g_filtered_speed - target_speed) * dt;
 
   // Limit distance integral to prevent windup
-  distance = constrain(distance, -20000.0f, 20000.0f);
+  g_distance = constrain(g_distance, -20000.0f, 20000.0f);
 
   // Calculate the angle adjustment required to track target speed
-  float speed_error = filtered_speed - target_speed;
+  float speed_error = g_filtered_speed - target_speed;
   float angle_adjustment =
-      (speed_error * g_speed_kp) + (distance * g_speed_ki);
+      (speed_error * g_speed_kp) + (g_distance * g_speed_ki);
   angle_adjustment = constrain(angle_adjustment, -15.0f,
                                15.0f); // Limit to max +/- 15 degrees correction
 

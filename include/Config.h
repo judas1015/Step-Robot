@@ -46,10 +46,10 @@ constexpr float FALL_ANGLE_DEG = 40.0f;  // Stop motors if |angle| > this
 constexpr float PID_KP = 200.0f;
 constexpr float PID_KI = 0.6f;
 constexpr float PID_KD = 0.5f;
-constexpr float BALANCE_SETPOINT = -6.0f; // degrees; trim if robot drifts
+constexpr float BALANCE_SETPOINT = -6.0; // degrees; trim if robot drifts
 constexpr float PID_OUT_MAX = 15000.0f;  // steps/s, positive = forward
 constexpr float PID_I_MAX = 400.0f;      // anti-windup clamp (tighter)
-constexpr float PID_DEADBAND = 0.0f;    // steps/s; below = stop (was 80)
+constexpr float PID_DEADBAND = 0.0f;     // steps/s; below = stop (was 80)
 constexpr float STEPPER_ACCEL_MAX =
     80000.0f; // steps/s^2; max acceleration to prevent stalling
 
@@ -58,8 +58,9 @@ constexpr float SPEED_KP = 0.005f;
 constexpr float SPEED_KI = 0.0002f;
 
 // JOYSTICK LIMITS
-constexpr float JOY_MAX_SPEED = 3000.0f; // Max target speed from joystick (steps/s)
-constexpr float JOY_MAX_TURN  = 2000.0f; // Max differential turn speed (steps/s)
+constexpr float JOY_MAX_SPEED =
+    3000.0f; // Max target speed from joystick (steps/s)
+constexpr float JOY_MAX_TURN = 2000.0f; // Max differential turn speed (steps/s)
 
 // STEPPER HARDWARE TIMER (Arduino ESP32 3.x API)
 // timerBegin(STEPPER_TIMER_HZ) -> 1 MHz base clock
