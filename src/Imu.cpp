@@ -60,11 +60,11 @@ void Imu::calibrate(void (*progressCb)(uint32_t count)) {
 
     Serial.println("[IMU] ---------------------------------------------------");
     Serial.println("[IMU] Dat robot THANG DUNG, YEN TINH tren nen phang.");
-    Serial.println("[IMU] Dang do gyro bias (2000 mau ~10 giay)...");
+    Serial.println("[IMU] Dang do gyro bias (500 mau ~2.5 giay)...");
     Serial.println("[IMU] ---------------------------------------------------");
     const unsigned long startMs = millis();
 
-    while (cal.count < 2000) {
+    while (cal.count < 500) {
         // Safety: abort after 60 s
         if (millis() - startMs > 60000) {
             Serial.println("[IMU] WARN: Calibration timeout (60s). Gyro bias = 0.");
@@ -91,12 +91,12 @@ void Imu::calibrate(void (*progressCb)(uint32_t count)) {
 
         cal.add(r);
 
-        if (progressCb && (cal.count % 200 == 0) && cal.count > 0)
+        if (progressCb && (cal.count % 100 == 0) && cal.count > 0)
             progressCb(cal.count);
         delayMicroseconds(5000);  // 200 Hz
     }
 
-    if (cal.count >= 2000) {
+    if (cal.count >= 500) {
         // Force accept even if variance > 0.5 deg/s
         _bias[0] = cal.gyro[0].mean;
         _bias[1] = cal.gyro[1].mean;

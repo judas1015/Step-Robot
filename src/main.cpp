@@ -116,7 +116,7 @@ static void handleSerial() {
 // ── Calibration progress callback
 // ─────────────────────────────────────────────
 static void onCalProgress(uint32_t count) {
-  Serial.printf("[CAL] %u / 2000 samples...\n", count);
+  Serial.printf("[CAL] %u / 500 samples...\n", count);
 }
 
 // ── Setup
