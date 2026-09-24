@@ -241,23 +241,32 @@ void loop() {
   // Low-pass filter to smooth speed estimation (critical to prevent vibration)
   g_filtered_speed = (0.9f * g_filtered_speed) + (0.1f * actual_speed);
 
-  float target_speed = g_joy_y * Config::JOY_MAX_SPEED;
-
+  // Filter joystick input for smoother acceleration
+  static float smoothed_joy_y = 0.0f;
+  smoothed_joy_y = (0.98f * smoothed_joy_y) + (0.02f * g_joy_y);
+  float target_speed = smoothed_joy_y * Config::JOY_MAX_SPEED;
+  
   // Integrate speed error to get position (distance error)
   if (g_stopped)
     g_distance = 0; // reset if stopped or fallen
   else
     g_distance += (g_filtered_speed - target_speed) * dt;
 
-  // Limit distance integral to prevent windup
+  // Decay the integral when joystick is released to prevent windup/wandering
+  if (g_joy_y == 0.0f) {
+    g_distance *= 0.95f; 
+  }
+
+  // Limit distance integral to prevent extreme windup
   g_distance = constrain(g_distance, -20000.0f, 20000.0f);
 
   // Calculate the angle adjustment required to track target speed
   float speed_error = g_filtered_speed - target_speed;
   float angle_adjustment =
       (speed_error * g_speed_kp) + (g_distance * g_speed_ki);
-  angle_adjustment = constrain(angle_adjustment, -15.0f,
-                               15.0f); // Limit to max +/- 15 degrees correction
+  
+  // Restore full authority to allow robot to pitch enough to recover and accelerate
+  angle_adjustment = constrain(angle_adjustment, -15.0f, 15.0f);
 
   // New dynamic setpoint
   float dynamic_setpoint = g_setpoint - angle_adjustment;
@@ -286,7 +295,10 @@ void loop() {
   // INVERT OUTPUT: if falling forward (pitch > 0, err < 0, output < 0),
   // we need to drive FORWARD (positive speed) to catch the fall.
   float base_speed = -output;
-  float turn_speed = g_joy_x * Config::JOY_MAX_TURN;
+  // Filter joystick input for smoother turning
+  static float smoothed_joy_x = 0.0f;
+  smoothed_joy_x = (0.90f * smoothed_joy_x) + (0.10f * g_joy_x);
+  float turn_speed = -smoothed_joy_x * Config::JOY_MAX_TURN; // Inverted to fix Left/Right directions
   
   Balancer::setSpeeds((int32_t)(base_speed + turn_speed), (int32_t)(base_speed - turn_speed));
 

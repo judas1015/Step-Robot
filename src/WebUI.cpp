@@ -41,7 +41,6 @@ const char* INDEX_HTML = R"rawliteral(
         .slider { flex: 3; margin: 0 15px; }
         .num-input { flex: 1; max-width: 80px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; padding: 5px; text-align: right; }
         .num-input:focus { outline: none; border-color: var(--accent); }
-        canvas { width: 100%; height: 150px; background: #000; border-radius: 4px; border: 1px solid #333; margin-top: 10px; }
         button { background-color: var(--accent); color: #000; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; flex: 1; margin: 0 5px; }
         button:active { opacity: 0.8; }
         .btn-stop { background-color: var(--danger); color: white; }
@@ -100,7 +99,6 @@ const char* INDEX_HTML = R"rawliteral(
                 <span>Góc: <b id="val-pitch">0.0</b>°</span>
                 <span>Speed: <b id="val-spd">0</b></span>
             </div>
-            <canvas id="chart"></canvas>
         </div>
 
         <div class="panel" style="text-align: center;">
@@ -162,39 +160,6 @@ const char* INDEX_HTML = R"rawliteral(
         ws.onopen = () => { statusEl.innerText = "Connected"; statusEl.style.color = "#4caf50"; };
         ws.onclose = () => { statusEl.innerText = "Disconnected"; statusEl.style.color = "#cf6679"; };
 
-        // Charting
-        const canvas = document.getElementById('chart');
-        const ctx = canvas.getContext('2d');
-        const history = new Array(100).fill(0);
-        
-        function drawChart() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.beginPath();
-            ctx.strokeStyle = '#bb86fc';
-            ctx.lineWidth = 2;
-            const stepX = canvas.width / (history.length - 1);
-            for(let i=0; i<history.length; i++) {
-                // Map -30 to 30 degrees to canvas height
-                const y = canvas.height/2 - (history[i] / 30) * (canvas.height/2);
-                if (i===0) ctx.moveTo(0, y);
-                else ctx.lineTo(i*stepX, y);
-            }
-            ctx.stroke();
-            // Center line
-            ctx.beginPath();
-            ctx.strokeStyle = '#555';
-            ctx.moveTo(0, canvas.height/2);
-            ctx.lineTo(canvas.width, canvas.height/2);
-            ctx.stroke();
-        }
-
-        // Adjust canvas internal size
-        function resizeCanvas() {
-            canvas.width = canvas.clientWidth;
-            canvas.height = canvas.clientHeight;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
 
         ws.onmessage = (e) => {
             const msg = JSON.parse(e.data);
@@ -210,9 +175,6 @@ const char* INDEX_HTML = R"rawliteral(
             } else if (msg.type === 'telemetry') {
                 document.getElementById('val-pitch').innerText = msg.pitch.toFixed(1);
                 document.getElementById('val-spd').innerText = msg.speed;
-                history.shift();
-                history.push(msg.pitch);
-                drawChart();
             }
         };
 
@@ -236,10 +198,10 @@ const char* INDEX_HTML = R"rawliteral(
             btn.addEventListener('touchend', release);
         }
         
-        bindDPad('btn-up', 0, 0.4);
-        bindDPad('btn-down', 0, -0.4);
-        bindDPad('btn-left', -0.4, 0);
-        bindDPad('btn-right', 0.4, 0);
+        bindDPad('btn-up', 0, 0.2);
+        bindDPad('btn-down', 0, -0.2);
+        bindDPad('btn-left', -0.2, 0);
+        bindDPad('btn-right', 0.2, 0);
     </script>
 </body>
 </html>
